@@ -9,8 +9,8 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="KARALLION">
 <meta property="og:description" content="O jogo diário das respostas raras. A resposta óbvia vale pouco.">
-<meta property="og:url" content="https://karallion.netlify.app/">
-<meta property="og:image" content="https://karallion.netlify.app/og.png">
+<meta property="og:url" content="https://karallion.github.io/">
+<meta property="og:image" content="https://karallion.github.io/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -324,10 +324,18 @@ const done = () => G.results.length>=G.ids.length && !G.showing;
 const total = () => G.results.reduce((s,r)=>s+(r.tier?TIERS[r.tier].pts:0),0);
 function setGlow(t){ document.documentElement.style.setProperty("--glow", t===undefined?"var(--t5)":cv(t)); }
 
-function cmNow(s){ return Math.round(s / (G.ids.length*100) * 30); }
+// Faixas em pontos (base de 700): bolso até 15, tímido até 190, honesto até 260, responsa até 340, respeito até 450, cavalo acima.
+const CM_KNOTS=[[0,0],[15,4.49],[190,9.49],[260,15.49],[340,20.49],[450,25.49],[700,30]];
+function cmExact(s){
+  const x=Math.max(0,Math.min(700, s*700/(G.ids.length*100)));
+  for(let i=1;i<CM_KNOTS.length;i++){ const [x0,y0]=CM_KNOTS[i-1],[x1,y1]=CM_KNOTS[i]; if(x<=x1) return y0+(y1-y0)*(x-x0)/(x1-x0); }
+  return 30;
+}
+function cmFrac(s){ return cmExact(s)/30; }
+function cmNow(s){ return Math.round(cmFrac(s) * 30); }
 let LAST_CM = null;
 function renderMeter(){
-  const s=total(), frac=Math.min(1, s/(G.ids.length*100)), c=cmNow(s);
+  const s=total(), frac=cmFrac(s), c=cmNow(s);
   $("rFill").style.height=(frac*100).toFixed(2)+"%";
   $("rEgg").style.bottom=(frac*100).toFixed(2)+"%";
   const h=46+frac*58; $("rEmoji").style.height=h.toFixed(1)+"px"; $("rEmoji").style.width=(h/2).toFixed(1)+"px";
@@ -491,12 +499,12 @@ function confetti(canvas,n){
 }
 
 /* ---------- final ---------- */
-function cm(s){ return Math.max(1, Math.round(s / (G.ids.length*100) * 30)); }
+function cm(s){ return Math.max(1, cmNow(s)); }
 function verdict(s){ const c=cm(s);
   return c<=4 ? `Karallion de bolso · ${c} cm`
     : c<=9 ? `Karallion tímido · ${c} cm`
     : c<=15 ? `Karallion honesto · ${c} cm`
-    : c<=20 ? `Dá pro gasto · ${c} cm`
+    : c<=20 ? `Karallion de responsa · ${c} cm`
     : c<=25 ? `Karallion de respeito · ${c} cm`
     : `KARALLION DE CAVALO!!! ${c} CM`; }
 function shareText(s){
